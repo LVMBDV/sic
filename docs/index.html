@@ -1,0 +1,531 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>sic — a lightweight, self-hosted comment service</title>
+    <meta
+      name="description"
+      content="sic is a small, self-hosted comment service for blogs and static sites. One script tag, an iframe-isolated widget, OAuth login, SQLite, and a single Docker image."
+    />
+    <link rel="canonical" href="https://lvmbdv.github.io/sic/" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://lvmbdv.github.io/sic/" />
+    <meta property="og:title" content="sic — a lightweight, self-hosted comment service" />
+    <meta
+      property="og:description"
+      content="Drop comments onto any blog with a single script tag. Iframe-isolated, OAuth login, SQLite, one Docker image."
+    />
+    <meta name="twitter:card" content="summary" />
+
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%236366f1' d='M4 3h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9l-5 4V5a2 2 0 0 1 2-2z'/%3E%3C/svg%3E"
+    />
+
+    <style>
+      :root {
+        --bg: #ffffff;
+        --bg-soft: #f6f7f9;
+        --bg-code: #f4f4f6;
+        --fg: #1c1d21;
+        --fg-soft: #5b5e69;
+        --border: #e4e6eb;
+        --accent: #6366f1;
+        --accent-fg: #ffffff;
+        --radius: 12px;
+        --maxw: 860px;
+        --mono: ui-monospace, "SF Mono", "JetBrains Mono", "Fira Code", Menlo, Consolas, monospace;
+        --sans: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #0e0f13;
+          --bg-soft: #16181d;
+          --bg-code: #1a1c22;
+          --fg: #e9eaee;
+          --fg-soft: #9a9ead;
+          --border: #2a2d35;
+          --accent: #818cf8;
+          --accent-fg: #0e0f13;
+        }
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--fg);
+        font-family: var(--sans);
+        line-height: 1.65;
+        font-size: 17px;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      a {
+        color: var(--accent);
+        text-decoration: none;
+      }
+      a:hover {
+        text-decoration: underline;
+      }
+
+      .wrap {
+        max-width: var(--maxw);
+        margin: 0 auto;
+        padding: 0 24px;
+      }
+
+      header.site {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background: color-mix(in srgb, var(--bg) 88%, transparent);
+        backdrop-filter: blur(8px);
+        border-bottom: 1px solid var(--border);
+      }
+      header.site .wrap {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        height: 60px;
+      }
+      .brand {
+        font-weight: 700;
+        font-size: 1.25rem;
+        letter-spacing: -0.02em;
+        color: var(--fg);
+      }
+      .brand:hover {
+        text-decoration: none;
+      }
+      .brand .dot {
+        color: var(--accent);
+      }
+      nav.top a {
+        margin-left: 20px;
+        color: var(--fg-soft);
+        font-size: 0.95rem;
+      }
+      nav.top a:hover {
+        color: var(--fg);
+      }
+      @media (max-width: 600px) {
+        nav.top a:not(.gh) {
+          display: none;
+        }
+      }
+
+      .hero {
+        padding: 80px 0 56px;
+        text-align: center;
+      }
+      .hero .tag {
+        display: inline-block;
+        font-size: 0.8rem;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: var(--accent);
+        background: color-mix(in srgb, var(--accent) 12%, transparent);
+        padding: 4px 12px;
+        border-radius: 999px;
+        margin-bottom: 24px;
+      }
+      .hero h1 {
+        font-size: clamp(2.2rem, 6vw, 3.4rem);
+        line-height: 1.1;
+        letter-spacing: -0.03em;
+        margin: 0 0 18px;
+      }
+      .hero p.lede {
+        font-size: 1.2rem;
+        color: var(--fg-soft);
+        max-width: 600px;
+        margin: 0 auto 32px;
+      }
+
+      .btns {
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+        flex-wrap: wrap;
+      }
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px 22px;
+        border-radius: var(--radius);
+        font-weight: 600;
+        font-size: 1rem;
+        border: 1px solid var(--border);
+      }
+      .btn:hover {
+        text-decoration: none;
+      }
+      .btn.primary {
+        background: var(--accent);
+        color: var(--accent-fg);
+        border-color: var(--accent);
+      }
+      .btn.primary:hover {
+        filter: brightness(1.08);
+      }
+      .btn.ghost {
+        background: var(--bg-soft);
+        color: var(--fg);
+      }
+      .btn.ghost:hover {
+        border-color: var(--accent);
+      }
+
+      section {
+        padding: 48px 0;
+        border-top: 1px solid var(--border);
+      }
+      section > .wrap > h2 {
+        font-size: 1.7rem;
+        letter-spacing: -0.02em;
+        margin: 0 0 8px;
+      }
+      section > .wrap > p.sub {
+        color: var(--fg-soft);
+        margin: 0 0 28px;
+      }
+
+      .features {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 16px;
+      }
+      .card {
+        background: var(--bg-soft);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 20px 22px;
+      }
+      .card h3 {
+        margin: 0 0 6px;
+        font-size: 1.05rem;
+      }
+      .card p {
+        margin: 0;
+        color: var(--fg-soft);
+        font-size: 0.95rem;
+      }
+
+      h3.step {
+        font-size: 1.1rem;
+        margin: 28px 0 10px;
+      }
+      h3.step:first-of-type {
+        margin-top: 0;
+      }
+
+      pre {
+        background: var(--bg-code);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 16px 18px;
+        overflow-x: auto;
+        font-family: var(--mono);
+        font-size: 0.88rem;
+        line-height: 1.55;
+        margin: 0 0 14px;
+      }
+      code {
+        font-family: var(--mono);
+        font-size: 0.9em;
+      }
+      p code,
+      td code,
+      li code {
+        background: var(--bg-code);
+        padding: 2px 6px;
+        border-radius: 6px;
+        white-space: nowrap;
+      }
+
+      .note {
+        font-size: 0.95rem;
+        color: var(--fg-soft);
+      }
+
+      .table-scroll {
+        overflow-x: auto;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        font-size: 0.92rem;
+      }
+      th,
+      td {
+        text-align: left;
+        padding: 11px 14px;
+        border-bottom: 1px solid var(--border);
+        vertical-align: top;
+      }
+      th {
+        background: var(--bg-soft);
+        font-weight: 600;
+        white-space: nowrap;
+      }
+      tr:last-child td {
+        border-bottom: 0;
+      }
+      td.req {
+        text-align: center;
+      }
+
+      footer.site {
+        border-top: 1px solid var(--border);
+        padding: 40px 0 56px;
+        color: var(--fg-soft);
+        font-size: 0.92rem;
+        text-align: center;
+      }
+      footer.site a {
+        color: var(--fg-soft);
+        text-decoration: underline;
+      }
+      footer.site a:hover {
+        color: var(--fg);
+      }
+    </style>
+  </head>
+
+  <body>
+    <header class="site">
+      <div class="wrap">
+        <a class="brand" href="#top">sic<span class="dot">.</span></a>
+        <nav class="top">
+          <a href="#features">Features</a>
+          <a href="#setup">Setup</a>
+          <a href="#config">Config</a>
+          <a class="gh" href="https://github.com/LVMBDV/sic">GitHub →</a>
+        </nav>
+      </div>
+    </header>
+
+    <main id="top">
+      <div class="hero">
+        <div class="wrap">
+          <span class="tag">Self-hosted · MIT · Node 24+</span>
+          <h1>Comments for your blog,<br />in one <code>&lt;script&gt;</code> tag.</h1>
+          <p class="lede">
+            <strong>sic</strong> is a small, opinionated comment service you can drop onto any site.
+            One Node process, SQLite for storage, a single Docker image — and it stays out of your
+            way.
+          </p>
+          <div class="btns">
+            <a class="btn primary" href="#setup">Get started</a>
+            <a class="btn ghost" href="https://github.com/LVMBDV/sic">View on GitHub</a>
+          </div>
+        </div>
+      </div>
+
+      <section id="features">
+        <div class="wrap">
+          <h2>What you get</h2>
+          <p class="sub">Everything the embed needs, nothing it doesn't.</p>
+          <div class="features">
+            <div class="card">
+              <h3>One-line embed</h3>
+              <p>A single async <code>&lt;script&gt;</code> injects the widget. No build step on the host page.</p>
+            </div>
+            <div class="card">
+              <h3>Iframe-isolated</h3>
+              <p>The widget renders in an iframe, so host CSS and JS can't break it — or read it.</p>
+            </div>
+            <div class="card">
+              <h3>OAuth login</h3>
+              <p>GitHub and Google sign-in (PKCE for Google). No passwords to store, ever.</p>
+            </div>
+            <div class="card">
+              <h3>Up-vote reactions</h3>
+              <p>Built in, one row per user per comment. Net counts come back with each thread.</p>
+            </div>
+            <div class="card">
+              <h3>Heuristic spam guard</h3>
+              <p>Honeypot field, link-flood and caps-ratio checks, length cap. No third-party API.</p>
+            </div>
+            <div class="card">
+              <h3>First-party sessions</h3>
+              <p>Signed-JWT cookies on the sic origin — <code>HttpOnly</code>, <code>SameSite=Lax</code>, <code>Secure</code> over HTTPS.</p>
+            </div>
+            <div class="card">
+              <h3>Tiny footprint</h3>
+              <p><code>node:sqlite</code> (no native build), Fastify, vanilla TS. No Redis, no Postgres, no bus.</p>
+            </div>
+            <div class="card">
+              <h3>One command to run</h3>
+              <p>Ships as a single Docker image. <code>docker compose up -d</code> and you're live.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="setup">
+        <div class="wrap">
+          <h2>Quick start</h2>
+          <p class="sub">Embed on a page, then run the service behind your reverse proxy.</p>
+
+          <h3 class="step">1 · Embed on your page</h3>
+          <pre><code>&lt;div id="sic-comments" data-thread="my-post-slug"&gt;&lt;/div&gt;
+&lt;script src="https://comments.example.com/embed.js" async&gt;&lt;/script&gt;</code></pre>
+          <p class="note">
+            <code>data-thread</code> identifies the thread. Omit it and the canonical URL (or
+            <code>location.pathname</code>) is used as a fallback.
+          </p>
+
+          <h3 class="step">2 · Run with Docker</h3>
+          <pre><code>cp .env.example .env   # set SIC_SESSION_SECRET, OAuth creds, allowed origins
+docker compose up -d</code></pre>
+          <p class="note">
+            The service listens on <code>:6767</code>. Put it behind Caddy, nginx, a Cloudflare
+            Tunnel, or similar, and terminate TLS there.
+          </p>
+
+          <h3 class="step">Or run from source</h3>
+          <pre><code>cp .env.example .env
+npm install
+npm run dev            # backend :6767 + Vite :5173 (proxied)</code></pre>
+          <p class="note">Requires <strong>Node 24+</strong> for stable <code>node:sqlite</code>.</p>
+        </div>
+      </section>
+
+      <section id="config">
+        <div class="wrap">
+          <h2>Configuration</h2>
+          <p class="sub">
+            All via environment variables — see
+            <a href="https://github.com/LVMBDV/sic/blob/main/.env.example">.env.example</a>.
+          </p>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>Variable</th>
+                  <th>Required</th>
+                  <th>Default</th>
+                  <th>Description</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>SIC_PUBLIC_URL</code></td>
+                  <td class="req">✅</td>
+                  <td>—</td>
+                  <td>Public origin where sic is reachable. Used for OAuth redirects and cookie <code>Secure</code>.</td>
+                </tr>
+                <tr>
+                  <td><code>SIC_SESSION_SECRET</code></td>
+                  <td class="req">✅</td>
+                  <td>—</td>
+                  <td>32+ chars of high-entropy random data. <code>openssl rand -base64 32</code> is fine.</td>
+                </tr>
+                <tr>
+                  <td><code>SIC_ALLOWED_ORIGINS</code></td>
+                  <td class="req">✅*</td>
+                  <td>—</td>
+                  <td>Comma-separated origins allowed to iframe the widget (CSP <code>frame-ancestors</code> + CORS).</td>
+                </tr>
+                <tr>
+                  <td><code>SIC_BIND</code></td>
+                  <td class="req">—</td>
+                  <td><code>127.0.0.1:6767</code></td>
+                  <td>Address to bind. Use <code>0.0.0.0:6767</code> in Docker.</td>
+                </tr>
+                <tr>
+                  <td><code>DATABASE_URL</code></td>
+                  <td class="req">—</td>
+                  <td><code>sic.db</code></td>
+                  <td>Path to the SQLite file. Defaults to <code>/data/sic.db</code> in Docker.</td>
+                </tr>
+                <tr>
+                  <td><code>SIC_GITHUB_CLIENT_ID</code> / <code>_SECRET</code></td>
+                  <td class="req">—</td>
+                  <td>—</td>
+                  <td>GitHub OAuth app credentials. Omit to disable GitHub login.</td>
+                </tr>
+                <tr>
+                  <td><code>SIC_GOOGLE_CLIENT_ID</code> / <code>_SECRET</code></td>
+                  <td class="req">—</td>
+                  <td>—</td>
+                  <td>Google OAuth credentials. Omit to disable Google login.</td>
+                </tr>
+                <tr>
+                  <td><code>LOG_LEVEL</code></td>
+                  <td class="req">—</td>
+                  <td><code>info</code></td>
+                  <td><code>trace</code>, <code>debug</code>, <code>info</code>, <code>warn</code>, <code>error</code>.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="note">
+            * Required in practice — without it, no third-party site can iframe the widget.
+          </p>
+
+          <h3 class="step">OAuth callbacks</h3>
+          <p class="note">Register an app with each provider and set the callback URL to:</p>
+          <pre><code>GitHub:  ${SIC_PUBLIC_URL}/auth/github/callback
+Google:  ${SIC_PUBLIC_URL}/auth/google/callback</code></pre>
+        </div>
+      </section>
+
+      <section id="architecture">
+        <div class="wrap">
+          <h2>How it fits together</h2>
+          <p class="sub">
+            The widget is served from the sic origin, so session cookies stay first-party. Host
+            sites never see them.
+          </p>
+          <pre><code>host page ──&lt;script&gt;── embed.js ──injects──▶ &lt;iframe src="…/embed?thread=…"&gt;
+                                                      │
+                                                      ▼
+                                              sic backend (:6767)
+                                              ├── /embed              (widget HTML)
+                                              ├── /embed.js           (loader)
+                                              ├── /api/me
+                                              ├── /api/threads/:slug/comments
+                                              ├── /api/comments/:id/reactions/:kind
+                                              └── /auth/{github,google}/{login,callback}
+                                                      │
+                                                      ▼
+                                                SQLite (WAL)</code></pre>
+          <p class="note">
+            The widget posts <code>sic:resize</code> messages to the parent so the iframe height
+            tracks its content. Sessions are signed JWTs with no server-side store — revoke by
+            rotating <code>SIC_SESSION_SECRET</code>.
+          </p>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site">
+      <div class="wrap">
+        <p>
+          <a href="https://github.com/LVMBDV/sic">GitHub</a> ·
+          <a href="https://github.com/LVMBDV/sic/blob/main/README.md">README</a> ·
+          <a href="https://github.com/LVMBDV/sic/blob/main/ROADMAP.md">Roadmap</a> ·
+          <a href="https://github.com/LVMBDV/sic/blob/main/CONTRIBUTING.md">Contributing</a>
+        </p>
+        <p>MIT © 2026 Ata Kuyumcu · sic is in early development.</p>
+      </div>
+    </footer>
+  </body>
+</html>
