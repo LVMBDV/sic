@@ -18,7 +18,7 @@ Guidance for Claude when working in this repo.
 
 ## Conventions
 
-- **Conventional Commits required** for every commit. Format: `<type>(scope): <description>`. See [memory/feedback_conventional_commits.md](/Users/atak/.claude/projects/-Users-atak-Projects-sic/memory/feedback_conventional_commits.md).
+- **Conventional Commits required** for every commit. Format: `<type>(scope): <description>`. See [conventionalcommits.org](https://www.conventionalcommits.org).
 - **Git workflow:** Branch per work item (`feat/…`, `fix/…`, `test/…`, `docs/…`) — don't commit straight to `main`. Commit as you go: small, logical commits as each piece lands, not one big commit at the end. **No PRs during early development** — merge the work-item branch back into `main` locally and move on.
 - **Port:** backend runs on **6767** (the meme port). Don't change without asking.
 - **Env file lives at repo root** (`.env`), not in `backend/`. Backend dev script loads via `--env-file=../.env`.
