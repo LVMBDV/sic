@@ -13,12 +13,13 @@ Guidance for Claude when working in this repo.
 - **Frontend:** TypeScript + Vite, vanilla (no framework). Two build outputs: a small `embed.js` loader and a hashed widget bundle served at `/embed`.
 - **Auth:** OAuth 2.0 via [`arctic`](https://arcticjs.dev) (GitHub + Google, PKCE for Google). Sessions are signed JWTs (via `jose`) in HttpOnly + SameSite=Lax cookies. `oauth_state` table holds CSRF state + PKCE verifier between redirect and callback.
 - **Lint/format:** **Biome only** at repo root. No ESLint, no Prettier — don't add them.
-- **Tests:** `node --test` with `tsx` loader. Place tests next to source as `*.test.ts`.
+- **Tests:** [Vitest](https://vitest.dev) in both workspaces. Place tests next to source as `*.test.ts`; run with `npm test` (forwards to both). Keep unit tests pure — extract logic out of DOM/IO side effects (see `frontend/widget/format.ts`) rather than standing up a browser env.
 - **Distribution:** Docker image only. SEA was considered and rejected (~110MB, doesn't bundle `node_modules`, brittle). Don't bring it back unless asked.
 
 ## Conventions
 
 - **Conventional Commits required** for every commit. Format: `<type>(scope): <description>`. See [memory/feedback_conventional_commits.md](/Users/atak/.claude/projects/-Users-atak-Projects-sic/memory/feedback_conventional_commits.md).
+- **Git workflow:** Branch per work item (`feat/…`, `fix/…`, `test/…`, `docs/…`) — don't commit straight to `main`. Commit as you go: small, logical commits as each piece lands, not one big commit at the end. **No PRs during early development** — merge the work-item branch back into `main` locally and move on.
 - **Port:** backend runs on **6767** (the meme port). Don't change without asking.
 - **Env file lives at repo root** (`.env`), not in `backend/`. Backend dev script loads via `--env-file=../.env`.
 - **Linux-only:** dropped macOS-specific tooling. Don't add `darwin` branches.
