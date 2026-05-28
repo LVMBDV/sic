@@ -1,21 +1,20 @@
-import { test } from 'node:test';
-import assert from 'node:assert/strict';
+import { expect, test } from 'vitest';
 import { checkSpam } from './spam.ts';
 
 test('accepts normal text', () => {
-  assert.equal(checkSpam('hello there', ''), null);
+  expect(checkSpam('hello there', '')).toBe(null);
 });
 
 test('rejects honeypot', () => {
-  assert.equal(checkSpam('hi', 'bot'), 'honeypot_triggered');
+  expect(checkSpam('hi', 'bot')).toBe('honeypot_triggered');
 });
 
 test('rejects link flood', () => {
   const body = 'http://a http://b http://c http://d http://e http://f';
-  assert.equal(checkSpam(body, ''), 'too_many_links');
+  expect(checkSpam(body, '')).toBe('too_many_links');
 });
 
 test('rejects excessive caps', () => {
   const body = 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
-  assert.equal(checkSpam(body, ''), 'excessive_caps');
+  expect(checkSpam(body, '')).toBe('excessive_caps');
 });

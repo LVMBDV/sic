@@ -1,5 +1,7 @@
 // Widget app — renders inside the iframe at /embed?thread=<slug>.
 
+import { escapeHtml, fmtDate } from './format.ts';
+
 interface CommentAuthor {
   id: string;
   display_name: string;
@@ -48,22 +50,6 @@ async function api<T>(path: string, init?: RequestInit): Promise<T> {
   }
   if (res.status === 204) return undefined as T;
   return (await res.json()) as T;
-}
-
-function fmtDate(unix: number): string {
-  return new Date(unix * 1000).toLocaleString();
-}
-
-function escapeHtml(s: string): string {
-  return s.replace(/[&<>"']/g, (c) => {
-    switch (c) {
-      case '&': return '&amp;';
-      case '<': return '&lt;';
-      case '>': return '&gt;';
-      case '"': return '&quot;';
-      default: return '&#39;';
-    }
-  });
 }
 
 function notifyResize(): void {
