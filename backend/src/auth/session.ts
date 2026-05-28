@@ -1,5 +1,5 @@
-import { SignJWT, jwtVerify } from "jose";
 import type { FastifyReply } from "fastify";
+import { SignJWT, jwtVerify } from "jose";
 import type { Config } from "../config.ts";
 import type { SessionClaims } from "../types.ts";
 
@@ -31,9 +31,9 @@ export async function verifySession(config: Config, token: string): Promise<Sess
     if (typeof payload.sub !== "string") return null;
     return {
       sub: payload.sub,
-      provider: String(payload["provider"] ?? ""),
-      name: String(payload["name"] ?? ""),
-      avatar: (payload["avatar"] as string | null) ?? null,
+      provider: String(payload.provider ?? ""),
+      name: String(payload.name ?? ""),
+      avatar: (payload.avatar as string | null) ?? null,
       iat: Number(payload.iat ?? 0),
       exp: Number(payload.exp ?? 0),
     };

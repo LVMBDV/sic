@@ -33,7 +33,13 @@ interface Me {
 const params = new URLSearchParams(location.search);
 const thread = params.get("thread") ?? "default";
 
-const root = document.getElementById("app")!;
+function mustGet(id: string): HTMLElement {
+  const el = document.getElementById(id);
+  if (!el) throw new Error(`[sic] missing #${id} element`);
+  return el;
+}
+
+const root = mustGet("app");
 
 let me: Me | null = null;
 let comments: Comment[] = [];
@@ -122,7 +128,8 @@ function bind(): void {
   document.getElementById("logout")?.addEventListener("click", onLogout);
 
   for (const article of document.querySelectorAll<HTMLElement>(".comment")) {
-    const id = article.dataset.id!;
+    const id = article.dataset.id;
+    if (!id) continue;
     article
       .querySelector<HTMLButtonElement>('[data-action="up"]')
       ?.addEventListener("click", () => onReact(id));
@@ -138,8 +145,8 @@ async function onSubmit(ev: SubmitEvent): Promise<void> {
   const fd = new FormData(form);
   const body = String(fd.get("body") ?? "").trim();
   const website = String(fd.get("website") ?? "");
-  const err = document.getElementById("composer-error")!;
-  err.textContent = "";
+  const err = document.getElementById("composer-error");
+  if (err) err.textContent = "";
 
   if (!body) return;
 
@@ -151,7 +158,7 @@ async function onSubmit(ev: SubmitEvent): Promise<void> {
     comments.push(created);
     render();
   } catch (e) {
-    err.textContent = (e as Error).message;
+    if (err) err.textContent = (e as Error).message;
   }
 }
 

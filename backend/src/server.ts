@@ -1,16 +1,16 @@
-import Fastify from "fastify";
 import cookie from "@fastify/cookie";
 import cors from "@fastify/cors";
-import sensible from "@fastify/sensible";
 import rateLimit from "@fastify/rate-limit";
+import sensible from "@fastify/sensible";
+import Fastify from "fastify";
 
+import { registerAuthRoutes } from "./auth/oauth.ts";
 import { loadConfig } from "./config.ts";
 import { openDb } from "./db.ts";
-import { registerAuthRoutes } from "./auth/oauth.ts";
-import { registerCommentRoutes } from "./routes/comments.ts";
-import { registerReactionRoutes } from "./routes/reactions.ts";
-import { registerMeRoutes } from "./routes/me.ts";
 import { registerAssetRoutes } from "./routes/assets.ts";
+import { registerCommentRoutes } from "./routes/comments.ts";
+import { registerMeRoutes } from "./routes/me.ts";
+import { registerReactionRoutes } from "./routes/reactions.ts";
 import "./types.ts";
 
 const config = loadConfig();

@@ -1,13 +1,13 @@
-import { GitHub, Google, generateState, generateCodeVerifier } from "arctic";
 import { randomUUID } from "node:crypto";
+import { GitHub, Google, generateCodeVerifier, generateState } from "arctic";
 import type { FastifyInstance } from "fastify";
 import { nowUnix } from "../db.ts";
 import {
+  COOKIE_NAME,
+  clearSessionCookie,
   issueSession,
   setSessionCookie,
-  clearSessionCookie,
   verifySession,
-  COOKIE_NAME,
 } from "./session.ts";
 
 type ProviderName = "github" | "google";
@@ -191,21 +191,20 @@ async function fetchProfile(provider: ProviderName, accessToken: string): Promis
       displayName: u.name ?? u.login,
       avatarUrl: u.avatar_url,
     };
-  } else {
-    const res = await fetch("https://openidconnect.googleapis.com/v1/userinfo", {
-      headers: { authorization: `Bearer ${accessToken}` },
-    });
-    if (!res.ok) throw new Error(`google user: ${res.status}`);
-    const u = (await res.json()) as {
-      sub: string;
-      name?: string;
-      email?: string;
-      picture?: string;
-    };
-    return {
-      providerUserId: u.sub,
-      displayName: u.name ?? u.email ?? "user",
-      avatarUrl: u.picture ?? null,
-    };
   }
+  const res = await fetch("https://openidconnect.googleapis.com/v1/userinfo", {
+    headers: { authorization: `Bearer ${accessToken}` },
+  });
+  if (!res.ok) throw new Error(`google user: ${res.status}`);
+  const u = (await res.json()) as {
+    sub: string;
+    name?: string;
+    email?: string;
+    picture?: string;
+  };
+  return {
+    providerUserId: u.sub,
+    displayName: u.name ?? u.email ?? "user",
+    avatarUrl: u.picture ?? null,
+  };
 }
