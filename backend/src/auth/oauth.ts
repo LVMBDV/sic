@@ -24,9 +24,11 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
   const providers: Partial<Record<ProviderName, { client: GitHub | Google }>> = {};
   if (config.github) {
     providers.github = {
-      client: new GitHub(config.github.clientId, config.github.clientSecret, {
-        redirectURI: `${config.publicUrl}/auth/github/callback`,
-      }),
+      client: new GitHub(
+        config.github.clientId,
+        config.github.clientSecret,
+        `${config.publicUrl}/auth/github/callback`,
+      ),
     };
   }
   if (config.google) {

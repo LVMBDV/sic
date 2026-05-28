@@ -51,7 +51,7 @@ export async function registerCommentRoutes(app: FastifyInstance): Promise<void>
          ORDER BY c.created_at ASC
         `,
       )
-      .all(meId, threadId) as CommentRow[];
+      .all(meId, threadId) as unknown as CommentRow[];
 
     return { thread: req.params.slug, comments: rows.map(rowToDto) };
   });
