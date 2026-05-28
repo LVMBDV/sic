@@ -1,0 +1,22 @@
+services:
+  sic:
+    build: .
+    ports:
+      - "6767:6767"
+    environment:
+      SIC_BIND: 0.0.0.0:6767
+      SIC_PUBLIC_URL: ${SIC_PUBLIC_URL}
+      DATABASE_URL: /data/sic.db
+      SIC_SESSION_SECRET: ${SIC_SESSION_SECRET}
+      SIC_ALLOWED_ORIGINS: ${SIC_ALLOWED_ORIGINS}
+      SIC_GITHUB_CLIENT_ID: ${SIC_GITHUB_CLIENT_ID}
+      SIC_GITHUB_CLIENT_SECRET: ${SIC_GITHUB_CLIENT_SECRET}
+      SIC_GOOGLE_CLIENT_ID: ${SIC_GOOGLE_CLIENT_ID}
+      SIC_GOOGLE_CLIENT_SECRET: ${SIC_GOOGLE_CLIENT_SECRET}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    volumes:
+      - sic-data:/data
+    restart: unless-stopped
+
+volumes:
+  sic-data:
