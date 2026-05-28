@@ -1,7 +1,7 @@
-import type { Config } from './config.ts';
-import type { DB } from './db.ts';
+import type { Config } from "./config.ts";
+import type { DB } from "./db.ts";
 
-declare module 'fastify' {
+declare module "fastify" {
   interface FastifyInstance {
     db: DB;
     config: Config;

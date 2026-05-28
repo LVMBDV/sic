@@ -1,6 +1,6 @@
 // Widget app — renders inside the iframe at /embed?thread=<slug>.
 
-import { escapeHtml, fmtDate } from './format.ts';
+import { escapeHtml, fmtDate } from "./format.ts";
 
 interface CommentAuthor {
   id: string;
@@ -31,17 +31,17 @@ interface Me {
 }
 
 const params = new URLSearchParams(location.search);
-const thread = params.get('thread') ?? 'default';
+const thread = params.get("thread") ?? "default";
 
-const root = document.getElementById('app')!;
+const root = document.getElementById("app")!;
 
 let me: Me | null = null;
 let comments: Comment[] = [];
 
 async function api<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(path, {
-    credentials: 'same-origin',
-    headers: { 'content-type': 'application/json', ...(init?.headers ?? {}) },
+    credentials: "same-origin",
+    headers: { "content-type": "application/json", ...(init?.headers ?? {}) },
     ...init,
   });
   if (!res.ok) {
@@ -54,7 +54,7 @@ async function api<T>(path: string, init?: RequestInit): Promise<T> {
 
 function notifyResize(): void {
   const h = document.documentElement.scrollHeight;
-  window.parent.postMessage({ type: 'sic:resize', height: h }, '*');
+  window.parent.postMessage({ type: "sic:resize", height: h }, "*");
 }
 
 function render(): void {
@@ -97,15 +97,15 @@ function render(): void {
             <div class="meta"><strong>${escapeHtml(c.author.display_name)}</strong> · ${fmtDate(c.created_at)}</div>
             <div class="body">${escapeHtml(c.body)}</div>
             <div class="actions">
-              <button data-action="up" class="${c.reactions.user_reacted ? 'upvoted' : ''}">
+              <button data-action="up" class="${c.reactions.user_reacted ? "upvoted" : ""}">
                 ▲ <span class="count">${c.reactions.up}</span>
               </button>
-              ${me && me.id === c.author.id ? `<button data-action="delete">Delete</button>` : ''}
+              ${me && me.id === c.author.id ? `<button data-action="delete">Delete</button>` : ""}
             </div>
           </div>
-        </article>`,
+        </article>`
     )
-    .join('');
+    .join("");
 
   root.innerHTML = `
     ${composer}
@@ -117,16 +117,18 @@ function render(): void {
 }
 
 function bind(): void {
-  const composer = document.getElementById('composer') as HTMLFormElement | null;
-  composer?.addEventListener('submit', onSubmit);
-  document.getElementById('logout')?.addEventListener('click', onLogout);
+  const composer = document.getElementById("composer") as HTMLFormElement | null;
+  composer?.addEventListener("submit", onSubmit);
+  document.getElementById("logout")?.addEventListener("click", onLogout);
 
-  for (const article of document.querySelectorAll<HTMLElement>('.comment')) {
+  for (const article of document.querySelectorAll<HTMLElement>(".comment")) {
     const id = article.dataset.id!;
-    article.querySelector<HTMLButtonElement>('[data-action="up"]')?.addEventListener('click', () => onReact(id));
+    article
+      .querySelector<HTMLButtonElement>('[data-action="up"]')
+      ?.addEventListener("click", () => onReact(id));
     article
       .querySelector<HTMLButtonElement>('[data-action="delete"]')
-      ?.addEventListener('click', () => onDelete(id));
+      ?.addEventListener("click", () => onDelete(id));
   }
 }
 
@@ -134,16 +136,16 @@ async function onSubmit(ev: SubmitEvent): Promise<void> {
   ev.preventDefault();
   const form = ev.currentTarget as HTMLFormElement;
   const fd = new FormData(form);
-  const body = String(fd.get('body') ?? '').trim();
-  const website = String(fd.get('website') ?? '');
-  const err = document.getElementById('composer-error')!;
-  err.textContent = '';
+  const body = String(fd.get("body") ?? "").trim();
+  const website = String(fd.get("website") ?? "");
+  const err = document.getElementById("composer-error")!;
+  err.textContent = "";
 
   if (!body) return;
 
   try {
     const created = await api<Comment>(`/api/threads/${encodeURIComponent(thread)}/comments`, {
-      method: 'POST',
+      method: "POST",
       body: JSON.stringify({ body, website }),
     });
     comments.push(created);
@@ -156,7 +158,7 @@ async function onSubmit(ev: SubmitEvent): Promise<void> {
 async function onReact(id: string): Promise<void> {
   const c = comments.find((x) => x.id === id);
   if (!c || !me) return;
-  const method = c.reactions.user_reacted ? 'DELETE' : 'POST';
+  const method = c.reactions.user_reacted ? "DELETE" : "POST";
   try {
     await api<void>(`/api/comments/${id}/reactions/up`, { method });
     c.reactions.user_reacted = !c.reactions.user_reacted;
@@ -168,9 +170,9 @@ async function onReact(id: string): Promise<void> {
 }
 
 async function onDelete(id: string): Promise<void> {
-  if (!confirm('Delete this comment?')) return;
+  if (!confirm("Delete this comment?")) return;
   try {
-    await api<void>(`/api/comments/${id}`, { method: 'DELETE' });
+    await api<void>(`/api/comments/${id}`, { method: "DELETE" });
     comments = comments.filter((c) => c.id !== id);
     render();
   } catch (e) {
@@ -180,7 +182,7 @@ async function onDelete(id: string): Promise<void> {
 
 async function onLogout(): Promise<void> {
   try {
-    await api<void>('/auth/logout', { method: 'POST' });
+    await api<void>("/auth/logout", { method: "POST" });
   } catch {
     /* ignore */
   }
@@ -190,9 +192,9 @@ async function onLogout(): Promise<void> {
 
 async function load(): Promise<void> {
   try {
-    me = await api<Me | null>('/api/me');
+    me = await api<Me | null>("/api/me");
     const data = await api<{ comments: Comment[] }>(
-      `/api/threads/${encodeURIComponent(thread)}/comments`,
+      `/api/threads/${encodeURIComponent(thread)}/comments`
     );
     comments = data.comments;
   } catch (e) {

@@ -1,7 +1,7 @@
-import type { FastifyInstance } from 'fastify';
+import type { FastifyInstance } from "fastify";
 
 export async function registerMeRoutes(app: FastifyInstance): Promise<void> {
-  app.get('/api/me', async (req) => {
+  app.get("/api/me", async (req) => {
     if (!req.user) return null;
     return {
       id: req.user.sub,
