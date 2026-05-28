@@ -3,7 +3,7 @@
 > A lightweight, self-hosted comment service for blogs and static sites.
 
 [![CI](https://github.com/LVMBDV/sic/actions/workflows/ci.yml/badge.svg)](https://github.com/LVMBDV/sic/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE.md)
 [![Node](https://img.shields.io/badge/node-%3E%3D24-43853d.svg?logo=node.js&logoColor=white)](https://nodejs.org)
 [![Code style: Biome](https://img.shields.io/badge/code_style-biome-60a5fa.svg)](https://biomejs.dev)
 [![Conventional Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-fa6673.svg)](https://www.conventionalcommits.org)
@@ -180,4 +180,4 @@ Found a security issue? Please report it privately — see
 
 ## License
 
-[MIT](LICENSE) © 2026 Ata Kuyumcu
+[MIT](LICENSE.md) © 2026 Ata Kuyumcu

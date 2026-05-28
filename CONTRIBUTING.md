@@ -91,4 +91,4 @@ Use the [issue templates](.github/ISSUE_TEMPLATE). For security issues, see
 ## License
 
 By contributing, you agree that your contributions will be licensed under the
-[MIT License](LICENSE).
+[MIT License](LICENSE.md).
