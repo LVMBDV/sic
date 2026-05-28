@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.7
 
 # 1. Install all workspace deps + build both
-FROM node:24-alpine AS build
+FROM node:26-alpine AS build
 WORKDIR /app
 COPY package.json package-lock.json* ./
 COPY backend/package.json backend/
@@ -12,7 +12,7 @@ COPY frontend/ frontend/
 RUN npm run build
 
 # 2. Production deps only (workspace-aware)
-FROM node:24-alpine AS prod-deps
+FROM node:26-alpine AS prod-deps
 WORKDIR /app
 COPY package.json package-lock.json* ./
 COPY backend/package.json backend/
@@ -20,7 +20,7 @@ COPY frontend/package.json frontend/
 RUN npm ci --omit=dev || npm install --omit=dev
 
 # 3. Runtime
-FROM node:24-alpine AS runtime
+FROM node:26-alpine AS runtime
 WORKDIR /app
 ENV NODE_ENV=production \
     SIC_BIND=0.0.0.0:6767 \
