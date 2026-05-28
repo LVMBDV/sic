@@ -153,14 +153,15 @@ This is an npm workspaces monorepo. Run scripts from the root:
 
 ## Roadmap
 
-- [ ] Admin dashboard (moderation queue, ban list)
-- [ ] Threaded replies
-- [ ] Markdown rendering with server-side sanitization
-- [ ] RSS / Atom feed per thread
-- [ ] Webhook notifications on new comments
-- [ ] Multi-language support in the widget
+`sic` is in early development. Near-term work is comment-UX parity — **threaded
+replies**, **Markdown rendering**, an **edit window**, **down-votes & sorting**,
+and **dark mode** — followed by moderation/admin tooling and email reply
+notifications.
 
-Want to help with any of these? See [CONTRIBUTING.md](CONTRIBUTING.md).
+See **[ROADMAP.md](ROADMAP.md)** for the full phased plan and what's explicitly
+out of scope.
+
+Want to help? See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ---
 
