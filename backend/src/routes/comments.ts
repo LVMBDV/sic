@@ -1,19 +1,19 @@
-import { randomUUID } from 'node:crypto';
-import type { FastifyInstance } from 'fastify';
-import { nowUnix } from '../db.ts';
-import { checkSpam } from '../spam.ts';
-import type { CommentDTO, CommentRow } from '../types.ts';
+import { randomUUID } from "node:crypto";
+import type { FastifyInstance } from "fastify";
+import { nowUnix } from "../db.ts";
+import { checkSpam } from "../spam.ts";
+import type { CommentDTO, CommentRow } from "../types.ts";
 
 const MAX_BODY = 10_000;
 
 function ensureThread(app: FastifyInstance, slug: string): string {
-  const row = app.db.prepare('SELECT id FROM threads WHERE slug = ?').get(slug) as
+  const row = app.db.prepare("SELECT id FROM threads WHERE slug = ?").get(slug) as
     | { id: string }
     | undefined;
   if (row) return row.id;
   const id = randomUUID();
   app.db
-    .prepare('INSERT INTO threads (id, slug, created_at) VALUES (?, ?, ?)')
+    .prepare("INSERT INTO threads (id, slug, created_at) VALUES (?, ?, ?)")
     .run(id, slug, nowUnix());
   return id;
 }
@@ -35,9 +35,9 @@ function rowToDto(r: CommentRow): CommentDTO {
 }
 
 export async function registerCommentRoutes(app: FastifyInstance): Promise<void> {
-  app.get<{ Params: { slug: string } }>('/api/threads/:slug/comments', async (req) => {
+  app.get<{ Params: { slug: string } }>("/api/threads/:slug/comments", async (req) => {
     const threadId = ensureThread(app, req.params.slug);
-    const meId = req.user?.sub ?? '';
+    const meId = req.user?.sub ?? "";
     const rows = app.db
       .prepare(
         `
@@ -49,9 +49,9 @@ export async function registerCommentRoutes(app: FastifyInstance): Promise<void>
           JOIN users u ON u.id = c.user_id
          WHERE c.thread_id = ? AND c.deleted = 0 AND c.hidden = 0
          ORDER BY c.created_at ASC
-        `,
+        `
       )
-      .all(meId, threadId) as CommentRow[];
+      .all(meId, threadId) as unknown as CommentRow[];
 
     return { thread: req.params.slug, comments: rows.map(rowToDto) };
   });
@@ -60,23 +60,23 @@ export async function registerCommentRoutes(app: FastifyInstance): Promise<void>
     Params: { slug: string };
     Body: { body: string; website?: string };
   }>(
-    '/api/threads/:slug/comments',
+    "/api/threads/:slug/comments",
     {
       schema: {
         body: {
-          type: 'object',
-          required: ['body'],
+          type: "object",
+          required: ["body"],
           properties: {
-            body: { type: 'string', minLength: 1, maxLength: MAX_BODY },
-            website: { type: 'string', maxLength: 0 },
+            body: { type: "string", minLength: 1, maxLength: MAX_BODY },
+            website: { type: "string", maxLength: 0 },
           },
         },
       },
     },
     async (req, reply) => {
-      if (!req.user) return reply.code(401).send({ error: 'unauthorized' });
+      if (!req.user) return reply.code(401).send({ error: "unauthorized" });
       const body = req.body.body.trim();
-      const reason = checkSpam(body, req.body.website ?? '');
+      const reason = checkSpam(body, req.body.website ?? "");
       if (reason) return reply.code(400).send({ error: `spam:${reason}` });
 
       const threadId = ensureThread(app, req.params.slug);
@@ -85,7 +85,7 @@ export async function registerCommentRoutes(app: FastifyInstance): Promise<void>
 
       app.db
         .prepare(
-          'INSERT INTO comments (id, thread_id, user_id, body, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)',
+          "INSERT INTO comments (id, thread_id, user_id, body, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)"
         )
         .run(id, threadId, req.user.sub, body, now, now);
 
@@ -103,16 +103,16 @@ export async function registerCommentRoutes(app: FastifyInstance): Promise<void>
         reactions: { up: 0, user_reacted: false },
       };
       return dto;
-    },
+    }
   );
 
-  app.delete<{ Params: { id: string } }>('/api/comments/:id', async (req, reply) => {
-    if (!req.user) return reply.code(401).send({ error: 'unauthorized' });
-    const owner = app.db.prepare('SELECT user_id FROM comments WHERE id = ?').get(req.params.id) as
+  app.delete<{ Params: { id: string } }>("/api/comments/:id", async (req, reply) => {
+    if (!req.user) return reply.code(401).send({ error: "unauthorized" });
+    const owner = app.db.prepare("SELECT user_id FROM comments WHERE id = ?").get(req.params.id) as
       | { user_id: string }
       | undefined;
-    if (!owner) return reply.code(404).send({ error: 'not_found' });
-    if (owner.user_id !== req.user.sub) return reply.code(403).send({ error: 'forbidden' });
+    if (!owner) return reply.code(404).send({ error: "not_found" });
+    if (owner.user_id !== req.user.sub) return reply.code(403).send({ error: "forbidden" });
 
     app.db
       .prepare("UPDATE comments SET deleted = 1, body = '', updated_at = ? WHERE id = ?")

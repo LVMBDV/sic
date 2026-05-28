@@ -6,11 +6,7 @@
     "useIgnoreFile": true
   },
   "files": {
-    "ignore": [
-      "**/dist/**",
-      "**/node_modules/**",
-      "**/*.sql"
-    ]
+    "ignore": ["**/dist/**", "**/node_modules/**", "**/*.sql"]
   },
   "formatter": {
     "enabled": true,
@@ -20,8 +16,8 @@
   },
   "javascript": {
     "formatter": {
-      "quoteStyle": "single",
-      "trailingCommas": "all",
+      "quoteStyle": "double",
+      "trailingCommas": "es5",
       "semicolons": "always",
       "arrowParentheses": "always"
     }

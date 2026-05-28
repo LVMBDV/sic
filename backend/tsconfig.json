@@ -13,6 +13,7 @@
     "exactOptionalPropertyTypes": true,
     "useDefineForClassFields": true,
     "isolatedModules": true,
+    "rewriteRelativeImportExtensions": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "resolveJsonModule": true,
