@@ -8,5 +8,6 @@ node_modules/
 .env
 .env.local
 .DS_Store
-.vscode/
+.vscode/*.code-snippets
+.vscode/launch.json
 .idea/
