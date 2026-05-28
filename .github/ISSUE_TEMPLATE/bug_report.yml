@@ -1,0 +1,53 @@
+name: Bug report
+description: Report a problem with sic
+title: "bug: "
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a bug. Please fill in as much detail
+        as you can — the more reproducible the report, the faster the fix.
+
+        Security issues should be reported privately — see SECURITY.md.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: A clear description of the bug.
+      placeholder: When I do X, Y happens; I expected Z.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      description: Minimal steps that reliably trigger the bug.
+      placeholder: |
+        1. Start the server with `npm run dev`
+        2. Open `http://localhost:5173/`
+        3. ...
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version / commit
+      description: The git SHA or release tag you tested.
+      placeholder: e.g. main @ 820363f
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: OS, Node version, browser (if relevant).
+      placeholder: Ubuntu 24.04, Node 24.2.0, Firefox 134
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / screenshots
+      description: Paste relevant server logs or browser console output. Redact secrets.
+      render: shell
