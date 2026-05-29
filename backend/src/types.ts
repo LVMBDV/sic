@@ -40,6 +40,7 @@ export interface CommentDTO {
   thread_id: string;
   parent_id: string | null;
   body: string;
+  body_html: string;
   created_at: number;
   updated_at: number;
   deleted: boolean;
