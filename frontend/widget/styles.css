@@ -91,6 +91,24 @@ button:disabled {
   border-top: 1px solid var(--border);
 }
 
+.comment.nested {
+  border-top: none;
+  border-left: 2px solid var(--border);
+  padding-left: 10px;
+}
+
+.composer.reply {
+  margin: 8px 0 4px;
+}
+
+.composer.reply textarea {
+  min-height: 56px;
+}
+
+.meta.tombstone {
+  font-style: italic;
+}
+
 .comment .avatar {
   width: 32px;
   height: 32px;

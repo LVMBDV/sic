@@ -1,6 +1,7 @@
 // Widget app — renders inside the iframe at /embed?thread=<slug>.
 
 import { escapeHtml, fmtDate } from "./format.ts";
+import { type TreeNode, buildTree, clampDepth, pruneDeleted } from "./tree.ts";
 
 interface CommentAuthor {
   id: string;
@@ -16,12 +17,16 @@ interface Reactions {
 interface Comment {
   id: string;
   thread_id: string;
+  parent_id: string | null;
   body: string;
   created_at: number;
   updated_at: number;
-  author: CommentAuthor;
+  deleted: boolean;
+  author: CommentAuthor | null;
   reactions: Reactions;
 }
+
+const INDENT_PX = 20;
 
 interface Me {
   id: string;
@@ -43,6 +48,7 @@ const root = mustGet("app");
 
 let me: Me | null = null;
 let comments: Comment[] = [];
+let replyingTo: string | null = null;
 
 async function api<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(path, {
@@ -61,6 +67,57 @@ async function api<T>(path: string, init?: RequestInit): Promise<T> {
 function notifyResize(): void {
   const h = document.documentElement.scrollHeight;
   window.parent.postMessage({ type: "sic:resize", height: h }, "*");
+}
+
+function replyForm(parentId: string): string {
+  return `
+    <form class="composer reply" data-parent="${parentId}">
+      <textarea name="body" required maxlength="10000" placeholder="Write a reply…"></textarea>
+      <div class="honeypot" aria-hidden="true">
+        <label>Website<input type="text" name="website" tabindex="-1" autocomplete="off" /></label>
+      </div>
+      <div class="row">
+        <span class="error" data-role="composer-error"></span>
+        <span>
+          <button type="button" data-action="cancel-reply">Cancel</button>
+          <button type="submit" class="primary">Reply</button>
+        </span>
+      </div>
+    </form>`;
+}
+
+function renderNode(node: TreeNode<Comment>, depth: number): string {
+  const c = node.comment;
+  const indent = clampDepth(depth) * INDENT_PX;
+  const inner = c.deleted
+    ? `<div class="meta tombstone">[comment deleted]</div>`
+    : `
+        <div class="meta"><strong>${escapeHtml(c.author?.display_name ?? "")}</strong> · ${fmtDate(c.created_at)}</div>
+        <div class="body">${escapeHtml(c.body)}</div>
+        <div class="actions">
+          <button data-action="up" class="${c.reactions.user_reacted ? "upvoted" : ""}">
+            ▲ <span class="count">${c.reactions.up}</span>
+          </button>
+          ${me ? `<button data-action="reply">Reply</button>` : ""}
+          ${me && c.author && me.id === c.author.id ? `<button data-action="delete">Delete</button>` : ""}
+        </div>
+        ${replyingTo === c.id ? replyForm(c.id) : ""}`;
+
+  const avatar =
+    !c.deleted && c.author?.avatar_url
+      ? `<img class="avatar" src="${escapeHtml(c.author.avatar_url)}" alt="" />`
+      : `<div class="avatar" aria-hidden="true"></div>`;
+
+  const children = node.children.map((child) => renderNode(child, depth + 1)).join("");
+
+  return `
+    <article class="comment${depth > 0 ? " nested" : ""}" data-id="${c.id}" style="margin-left:${indent}px">
+      ${avatar}
+      <div style="flex:1; min-width:0;">
+        ${inner}
+      </div>
+    </article>
+    ${children}`;
 }
 
 function render(): void {
@@ -90,28 +147,8 @@ function render(): void {
         </div>
       </div>`;
 
-  const list = comments
-    .map(
-      (c) => `
-        <article class="comment" data-id="${c.id}">
-          ${
-            c.author.avatar_url
-              ? `<img class="avatar" src="${escapeHtml(c.author.avatar_url)}" alt="" />`
-              : `<div class="avatar" aria-hidden="true"></div>`
-          }
-          <div style="flex:1; min-width:0;">
-            <div class="meta"><strong>${escapeHtml(c.author.display_name)}</strong> · ${fmtDate(c.created_at)}</div>
-            <div class="body">${escapeHtml(c.body)}</div>
-            <div class="actions">
-              <button data-action="up" class="${c.reactions.user_reacted ? "upvoted" : ""}">
-                ▲ <span class="count">${c.reactions.up}</span>
-              </button>
-              ${me && me.id === c.author.id ? `<button data-action="delete">Delete</button>` : ""}
-            </div>
-          </div>
-        </article>`
-    )
-    .join("");
+  const tree = pruneDeleted(buildTree(comments));
+  const list = tree.map((node) => renderNode(node, 0)).join("");
 
   root.innerHTML = `
     ${composer}
@@ -127,6 +164,10 @@ function bind(): void {
   composer?.addEventListener("submit", onSubmit);
   document.getElementById("logout")?.addEventListener("click", onLogout);
 
+  for (const form of document.querySelectorAll<HTMLFormElement>(".composer.reply")) {
+    form.addEventListener("submit", onSubmit);
+  }
+
   for (const article of document.querySelectorAll<HTMLElement>(".comment")) {
     const id = article.dataset.id;
     if (!id) continue;
@@ -136,7 +177,18 @@ function bind(): void {
     article
       .querySelector<HTMLButtonElement>('[data-action="delete"]')
       ?.addEventListener("click", () => onDelete(id));
+    article
+      .querySelector<HTMLButtonElement>('[data-action="reply"]')
+      ?.addEventListener("click", () => onReply(id));
+    article
+      .querySelector<HTMLButtonElement>('[data-action="cancel-reply"]')
+      ?.addEventListener("click", () => onReply(null));
   }
+}
+
+function onReply(id: string | null): void {
+  replyingTo = replyingTo === id ? null : id;
+  render();
 }
 
 async function onSubmit(ev: SubmitEvent): Promise<void> {
@@ -145,7 +197,10 @@ async function onSubmit(ev: SubmitEvent): Promise<void> {
   const fd = new FormData(form);
   const body = String(fd.get("body") ?? "").trim();
   const website = String(fd.get("website") ?? "");
-  const err = document.getElementById("composer-error");
+  const parentId = form.dataset.parent ?? null;
+  const err =
+    form.querySelector<HTMLElement>('[data-role="composer-error"]') ??
+    document.getElementById("composer-error");
   if (err) err.textContent = "";
 
   if (!body) return;
@@ -153,9 +208,10 @@ async function onSubmit(ev: SubmitEvent): Promise<void> {
   try {
     const created = await api<Comment>(`/api/threads/${encodeURIComponent(thread)}/comments`, {
       method: "POST",
-      body: JSON.stringify({ body, website }),
+      body: JSON.stringify({ body, website, ...(parentId ? { parent_id: parentId } : {}) }),
     });
     comments.push(created);
+    replyingTo = null;
     render();
   } catch (e) {
     if (err) err.textContent = (e as Error).message;
@@ -180,7 +236,12 @@ async function onDelete(id: string): Promise<void> {
   if (!confirm("Delete this comment?")) return;
   try {
     await api<void>(`/api/comments/${id}`, { method: "DELETE" });
-    comments = comments.filter((c) => c.id !== id);
+    const c = comments.find((x) => x.id === id);
+    if (c) {
+      c.deleted = true;
+      c.body = "";
+      c.author = null;
+    }
     render();
   } catch (e) {
     console.error(e);
