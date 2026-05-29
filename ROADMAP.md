@@ -33,6 +33,7 @@ Some of its features are explicitly **non-goals** for `sic` (see below).
 - Threaded replies (nesting capped at 3 levels, `[deleted]` tombstones)
 - Markdown rendering (server-side, sanitized subset; no raw HTML/images)
 - Up/down votes with net score (mutually exclusive)
+- Comment count API (`GET /api/threads/:slug/count`)
 - OAuth login (GitHub, Google) with JWT cookie sessions
 - Honeypot + heuristic spam check (links, caps, length)
 - HTML-escaped rendering, iframe auto-resize, CSP `frame-ancestors` allowlist
@@ -61,8 +62,9 @@ mostly self-contained.
 - ⬜ **Sorting.** newest / oldest / best (by score). Currently fixed `created_at ASC`.
 - ⬜ **Pagination / lazy load.** "Show more" for long threads — one query returns
   everything right now.
-- ⬜ **Comment count API.** `GET /api/threads/:slug/count` so host pages can show
-  "💬 12" on index/listing pages without loading the widget.
+- ✅ **Comment count API.** `GET /api/threads/:slug/count` returns the visible
+  comment count (replies included, deleted/hidden excluded) without loading the
+  widget or auto-creating threads. Single-slug for now; batch deferred.
 - ⬜ **Dark mode / theming.** Honor `prefers-color-scheme` and accept a theme param
   from the embed loader.
 
