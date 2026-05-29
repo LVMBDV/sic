@@ -47,6 +47,20 @@ function rowToDto(r: CommentRow): CommentDTO {
 }
 
 export async function registerCommentRoutes(app: FastifyInstance): Promise<void> {
+  // Lightweight count for host listing/index pages — no thread is created on miss,
+  // so a "💬 12" badge never spawns empty threads. Returns 0 for unknown slugs.
+  app.get<{ Params: { slug: string } }>("/api/threads/:slug/count", async (req) => {
+    const row = app.db
+      .prepare(
+        `SELECT COUNT(*) AS count
+           FROM comments c
+           JOIN threads t ON t.id = c.thread_id
+          WHERE t.slug = ? AND c.deleted = 0 AND c.hidden = 0`
+      )
+      .get(req.params.slug) as { count: number };
+    return { thread: req.params.slug, count: row.count };
+  });
+
   app.get<{ Params: { slug: string } }>("/api/threads/:slug/comments", async (req) => {
     const threadId = ensureThread(app, req.params.slug);
     const meId = req.user?.sub ?? "";
