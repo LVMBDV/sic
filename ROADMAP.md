@@ -32,7 +32,7 @@ Some of its features are explicitly **non-goals** for `sic` (see below).
 - Post / list / soft-delete comments (10k cap)
 - Threaded replies (nesting capped at 3 levels, `[deleted]` tombstones)
 - Markdown rendering (server-side, sanitized subset; no raw HTML/images)
-- Upvote reaction
+- Up/down votes with net score (mutually exclusive)
 - OAuth login (GitHub, Google) with JWT cookie sessions
 - Honeypot + heuristic spam check (links, caps, length)
 - HTML-escaped rendering, iframe auto-resize, CSP `frame-ancestors` allowlist
@@ -55,8 +55,9 @@ mostly self-contained.
   `body_html`; the raw body is kept for a future edit feature.
 - ⬜ **Edit window.** Allow editing for N minutes after posting (`updated_at` already
   exists; needs a `PATCH` route + an "edited" marker in the UI).
-- ⬜ **Downvotes & score.** `reactions.kind` already generalizes; widen `KINDS` to
-  `up`/`down` and surface a net score.
+- ✅ **Downvotes & score.** `KINDS` widened to `up`/`down`, mutually exclusive
+  (casting one clears the other). The DTO exposes a net score + the caller's vote;
+  the widget shows ▲/▼ around the score.
 - ⬜ **Sorting.** newest / oldest / best (by score). Currently fixed `created_at ASC`.
 - ⬜ **Pagination / lazy load.** "Show more" for long threads — one query returns
   everything right now.
