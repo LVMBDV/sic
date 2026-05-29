@@ -23,9 +23,11 @@ export interface SessionClaims {
 export interface CommentRow {
   id: string;
   thread_id: string;
+  parent_id: string | null;
   body: string;
   created_at: number;
   updated_at: number;
+  deleted: number;
   user_id: string;
   display_name: string;
   avatar_url: string | null;
@@ -36,14 +38,16 @@ export interface CommentRow {
 export interface CommentDTO {
   id: string;
   thread_id: string;
+  parent_id: string | null;
   body: string;
   created_at: number;
   updated_at: number;
+  deleted: boolean;
   author: {
     id: string;
     display_name: string;
     avatar_url: string | null;
-  };
+  } | null;
   reactions: {
     up: number;
     user_reacted: boolean;
