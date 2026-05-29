@@ -65,8 +65,9 @@ mostly self-contained.
 - ✅ **Comment count API.** `GET /api/threads/:slug/count` returns the visible
   comment count (replies included, deleted/hidden excluded) without loading the
   widget or auto-creating threads. Single-slug for now; batch deferred.
-- ⬜ **Dark mode / theming.** Honor `prefers-color-scheme` and accept a theme param
-  from the embed loader.
+- 🟡 **Dark mode / theming.** Auto dark mode ships — the widget honors
+  `prefers-color-scheme` via CSS variables. An explicit theme param from the embed
+  loader (force light/dark) is deferred.
 
 ## Phase 2 — Moderation & admin
 
