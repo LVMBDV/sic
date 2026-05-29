@@ -31,6 +31,7 @@ Some of its features are explicitly **non-goals** for `sic` (see below).
 - Threads auto-created by slug
 - Post / list / soft-delete comments (10k cap)
 - Threaded replies (nesting capped at 3 levels, `[deleted]` tombstones)
+- Markdown rendering (server-side, sanitized subset; no raw HTML/images)
 - Upvote reaction
 - OAuth login (GitHub, Google) with JWT cookie sessions
 - Honeypot + heuristic spam check (links, caps, length)
@@ -47,9 +48,11 @@ mostly self-contained.
   renders nesting with visual indentation capped at 3 levels (deeper replies keep
   their true parent, flattened). Deleted parents with surviving replies render as a
   `[deleted]` tombstone; deleted leaves are pruned.
-- ⬜ **Markdown rendering.** Server-side render + sanitize (the widget escapes plain
-  text today). Pick a small, audited renderer; sanitize HTML hard given the iframe
-  trust boundary.
+- ✅ **Markdown rendering.** Server-side render (markdown-it) + hard sanitize
+  (sanitize-html) into a strict allowlist. A comment subset — emphasis, inline/fenced
+  code, links, blockquotes, lists; no headings, no images, no raw HTML. Links forced
+  to `rel="nofollow ugc noopener noreferrer" target="_blank"`. The DTO carries
+  `body_html`; the raw body is kept for a future edit feature.
 - ⬜ **Edit window.** Allow editing for N minutes after posting (`updated_at` already
   exists; needs a `PATCH` route + an "edited" marker in the UI).
 - ⬜ **Downvotes & score.** `reactions.kind` already generalizes; widen `KINDS` to
