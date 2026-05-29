@@ -30,6 +30,7 @@ Some of its features are explicitly **non-goals** for `sic` (see below).
 
 - Threads auto-created by slug
 - Post / list / soft-delete comments (10k cap)
+- Threaded replies (nesting capped at 3 levels, `[deleted]` tombstones)
 - Upvote reaction
 - OAuth login (GitHub, Google) with JWT cookie sessions
 - Honeypot + heuristic spam check (links, caps, length)
@@ -42,9 +43,10 @@ Some of its features are explicitly **non-goals** for `sic` (see below).
 The table-stakes features a reader expects from a comment widget. Highest value;
 mostly self-contained.
 
-- ⬜ **Threaded replies.** Add `parent_id` to `comments`, render nesting (cap depth,
-  e.g. collapse beyond 3–4 levels). *This is the biggest single gap — comments are
-  flat today.*
+- ✅ **Threaded replies.** `parent_id` on `comments`; the widget builds the tree and
+  renders nesting with visual indentation capped at 3 levels (deeper replies keep
+  their true parent, flattened). Deleted parents with surviving replies render as a
+  `[deleted]` tombstone; deleted leaves are pruned.
 - ⬜ **Markdown rendering.** Server-side render + sanitize (the widget escapes plain
   text today). Pick a small, audited renderer; sanitize HTML hard given the iframe
   trust boundary.
