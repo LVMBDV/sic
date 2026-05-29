@@ -37,7 +37,12 @@ function rowToDto(r: CommentRow): CommentDTO {
           display_name: r.display_name,
           avatar_url: r.avatar_url,
         },
-    reactions: { up: r.up, user_reacted: r.user_up !== 0 },
+    reactions: {
+      up: r.up,
+      down: r.down,
+      score: r.up - r.down,
+      user_vote: r.user_up !== 0 ? "up" : r.user_down !== 0 ? "down" : null,
+    },
   };
 }
 
@@ -51,14 +56,16 @@ export async function registerCommentRoutes(app: FastifyInstance): Promise<void>
         SELECT c.id, c.thread_id, c.parent_id, c.body, c.created_at, c.updated_at, c.deleted,
                u.id AS user_id, u.display_name, u.avatar_url,
                (SELECT COUNT(*) FROM reactions r WHERE r.comment_id = c.id AND r.kind = 'up') AS up,
-               EXISTS(SELECT 1 FROM reactions r WHERE r.comment_id = c.id AND r.kind = 'up' AND r.user_id = ?) AS user_up
+               (SELECT COUNT(*) FROM reactions r WHERE r.comment_id = c.id AND r.kind = 'down') AS down,
+               EXISTS(SELECT 1 FROM reactions r WHERE r.comment_id = c.id AND r.kind = 'up' AND r.user_id = ?) AS user_up,
+               EXISTS(SELECT 1 FROM reactions r WHERE r.comment_id = c.id AND r.kind = 'down' AND r.user_id = ?) AS user_down
           FROM comments c
           JOIN users u ON u.id = c.user_id
          WHERE c.thread_id = ? AND c.hidden = 0
          ORDER BY c.created_at ASC
         `
       )
-      .all(meId, threadId) as unknown as CommentRow[];
+      .all(meId, meId, threadId) as unknown as CommentRow[];
 
     return { thread: req.params.slug, comments: rows.map(rowToDto) };
   });
@@ -122,7 +129,7 @@ export async function registerCommentRoutes(app: FastifyInstance): Promise<void>
           display_name: req.user.name,
           avatar_url: req.user.avatar,
         },
-        reactions: { up: 0, user_reacted: false },
+        reactions: { up: 0, down: 0, score: 0, user_vote: null },
       };
       return dto;
     }

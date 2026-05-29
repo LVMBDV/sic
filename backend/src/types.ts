@@ -32,7 +32,9 @@ export interface CommentRow {
   display_name: string;
   avatar_url: string | null;
   up: number;
+  down: number;
   user_up: number;
+  user_down: number;
 }
 
 export interface CommentDTO {
@@ -51,6 +53,8 @@ export interface CommentDTO {
   } | null;
   reactions: {
     up: number;
-    user_reacted: boolean;
+    down: number;
+    score: number;
+    user_vote: "up" | "down" | null;
   };
 }

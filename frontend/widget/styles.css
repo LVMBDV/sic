@@ -184,9 +184,31 @@ button:disabled {
   font-size: 13px;
 }
 
-.actions .upvoted {
+.actions .score {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.actions .score button {
+  padding: 2px 6px;
+  line-height: 1;
+}
+
+.actions .score .count {
+  min-width: 1.2em;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.actions .score button[data-action="up"].voted {
   border-color: var(--accent);
   color: var(--accent);
+}
+
+.actions .score button[data-action="down"].voted {
+  border-color: var(--danger);
+  color: var(--danger);
 }
 
 .honeypot {

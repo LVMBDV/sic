@@ -2,16 +2,12 @@
 
 import { escapeHtml, fmtDate } from "./format.ts";
 import { type TreeNode, buildTree, clampDepth, pruneDeleted } from "./tree.ts";
+import { type Reactions, applyVote, voteMethod } from "./vote.ts";
 
 interface CommentAuthor {
   id: string;
   display_name: string;
   avatar_url: string | null;
-}
-
-interface Reactions {
-  up: number;
-  user_reacted: boolean;
 }
 
 interface Comment {
@@ -96,9 +92,11 @@ function renderNode(node: TreeNode<Comment>, depth: number): string {
         <div class="meta"><strong>${escapeHtml(c.author?.display_name ?? "")}</strong> · ${fmtDate(c.created_at)}</div>
         <div class="body">${c.body_html}</div>
         <div class="actions">
-          <button data-action="up" class="${c.reactions.user_reacted ? "upvoted" : ""}">
-            ▲ <span class="count">${c.reactions.up}</span>
-          </button>
+          <span class="score">
+            <button data-action="up" class="${c.reactions.user_vote === "up" ? "voted" : ""}" aria-label="Upvote">▲</button>
+            <span class="count">${c.reactions.score}</span>
+            <button data-action="down" class="${c.reactions.user_vote === "down" ? "voted" : ""}" aria-label="Downvote">▼</button>
+          </span>
           ${me ? `<button data-action="reply">Reply</button>` : ""}
           ${me && c.author && me.id === c.author.id ? `<button data-action="delete">Delete</button>` : ""}
         </div>
@@ -174,7 +172,10 @@ function bind(): void {
     if (!id) continue;
     article
       .querySelector<HTMLButtonElement>('[data-action="up"]')
-      ?.addEventListener("click", () => onReact(id));
+      ?.addEventListener("click", () => onReact(id, "up"));
+    article
+      .querySelector<HTMLButtonElement>('[data-action="down"]')
+      ?.addEventListener("click", () => onReact(id, "down"));
     article
       .querySelector<HTMLButtonElement>('[data-action="delete"]')
       ?.addEventListener("click", () => onDelete(id));
@@ -219,16 +220,18 @@ async function onSubmit(ev: SubmitEvent): Promise<void> {
   }
 }
 
-async function onReact(id: string): Promise<void> {
+async function onReact(id: string, kind: "up" | "down"): Promise<void> {
   const c = comments.find((x) => x.id === id);
   if (!c || !me) return;
-  const method = c.reactions.user_reacted ? "DELETE" : "POST";
+  const method = voteMethod(c.reactions, kind);
+  const previous = c.reactions;
+  c.reactions = applyVote(c.reactions, kind);
+  render();
   try {
-    await api<void>(`/api/comments/${id}/reactions/up`, { method });
-    c.reactions.user_reacted = !c.reactions.user_reacted;
-    c.reactions.up += c.reactions.user_reacted ? 1 : -1;
-    render();
+    await api<void>(`/api/comments/${id}/reactions/${kind}`, { method });
   } catch (e) {
+    c.reactions = previous;
+    render();
     console.error(e);
   }
 }
