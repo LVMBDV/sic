@@ -1,7 +1,8 @@
 import type { FastifyInstance } from "fastify";
 import { nowUnix } from "../db.ts";
 
-const KINDS = new Set(["up"]);
+const KINDS = new Set(["up", "down"]);
+const opposite = (kind: string): string => (kind === "up" ? "down" : "up");
 
 export async function registerReactionRoutes(app: FastifyInstance): Promise<void> {
   app.post<{ Params: { id: string; kind: string } }>(
@@ -16,6 +17,10 @@ export async function registerReactionRoutes(app: FastifyInstance): Promise<void
         .get(req.params.id);
       if (!exists) return reply.code(404).send({ error: "not_found" });
 
+      // up/down are mutually exclusive: casting one clears the other.
+      app.db
+        .prepare("DELETE FROM reactions WHERE comment_id = ? AND user_id = ? AND kind = ?")
+        .run(req.params.id, req.user.sub, opposite(req.params.kind));
       app.db
         .prepare(
           "INSERT OR IGNORE INTO reactions (comment_id, user_id, kind, created_at) VALUES (?, ?, ?, ?)"
