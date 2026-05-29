@@ -19,6 +19,7 @@ interface Comment {
   thread_id: string;
   parent_id: string | null;
   body: string;
+  body_html: string;
   created_at: number;
   updated_at: number;
   deleted: boolean;
@@ -93,7 +94,7 @@ function renderNode(node: TreeNode<Comment>, depth: number): string {
     ? `<div class="meta tombstone">[comment deleted]</div>`
     : `
         <div class="meta"><strong>${escapeHtml(c.author?.display_name ?? "")}</strong> · ${fmtDate(c.created_at)}</div>
-        <div class="body">${escapeHtml(c.body)}</div>
+        <div class="body">${c.body_html}</div>
         <div class="actions">
           <button data-action="up" class="${c.reactions.user_reacted ? "upvoted" : ""}">
             ▲ <span class="count">${c.reactions.up}</span>

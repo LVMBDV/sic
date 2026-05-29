@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { FastifyInstance } from "fastify";
 import { nowUnix } from "../db.ts";
+import { renderMarkdown } from "../markdown.ts";
 import { checkSpam } from "../spam.ts";
 import type { CommentDTO, CommentRow } from "../types.ts";
 
@@ -25,6 +26,7 @@ function rowToDto(r: CommentRow): CommentDTO {
     thread_id: r.thread_id,
     parent_id: r.parent_id,
     body: deleted ? "" : r.body,
+    body_html: deleted ? "" : renderMarkdown(r.body),
     created_at: r.created_at,
     updated_at: r.updated_at,
     deleted,
@@ -111,6 +113,7 @@ export async function registerCommentRoutes(app: FastifyInstance): Promise<void>
         thread_id: threadId,
         parent_id: parentId,
         body,
+        body_html: renderMarkdown(body),
         created_at: now,
         updated_at: now,
         deleted: false,
