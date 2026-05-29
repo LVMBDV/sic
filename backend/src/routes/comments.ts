@@ -19,17 +19,22 @@ function ensureThread(app: FastifyInstance, slug: string): string {
 }
 
 function rowToDto(r: CommentRow): CommentDTO {
+  const deleted = r.deleted !== 0;
   return {
     id: r.id,
     thread_id: r.thread_id,
-    body: r.body,
+    parent_id: r.parent_id,
+    body: deleted ? "" : r.body,
     created_at: r.created_at,
     updated_at: r.updated_at,
-    author: {
-      id: r.user_id,
-      display_name: r.display_name,
-      avatar_url: r.avatar_url,
-    },
+    deleted,
+    author: deleted
+      ? null
+      : {
+          id: r.user_id,
+          display_name: r.display_name,
+          avatar_url: r.avatar_url,
+        },
     reactions: { up: r.up, user_reacted: r.user_up !== 0 },
   };
 }
@@ -41,13 +46,13 @@ export async function registerCommentRoutes(app: FastifyInstance): Promise<void>
     const rows = app.db
       .prepare(
         `
-        SELECT c.id, c.thread_id, c.body, c.created_at, c.updated_at,
+        SELECT c.id, c.thread_id, c.parent_id, c.body, c.created_at, c.updated_at, c.deleted,
                u.id AS user_id, u.display_name, u.avatar_url,
                (SELECT COUNT(*) FROM reactions r WHERE r.comment_id = c.id AND r.kind = 'up') AS up,
                EXISTS(SELECT 1 FROM reactions r WHERE r.comment_id = c.id AND r.kind = 'up' AND r.user_id = ?) AS user_up
           FROM comments c
           JOIN users u ON u.id = c.user_id
-         WHERE c.thread_id = ? AND c.deleted = 0 AND c.hidden = 0
+         WHERE c.thread_id = ? AND c.hidden = 0
          ORDER BY c.created_at ASC
         `
       )
@@ -58,7 +63,7 @@ export async function registerCommentRoutes(app: FastifyInstance): Promise<void>
 
   app.post<{
     Params: { slug: string };
-    Body: { body: string; website?: string };
+    Body: { body: string; website?: string; parent_id?: string };
   }>(
     "/api/threads/:slug/comments",
     {
@@ -69,6 +74,7 @@ export async function registerCommentRoutes(app: FastifyInstance): Promise<void>
           properties: {
             body: { type: "string", minLength: 1, maxLength: MAX_BODY },
             website: { type: "string", maxLength: 0 },
+            parent_id: { type: "string" },
           },
         },
       },
@@ -80,21 +86,34 @@ export async function registerCommentRoutes(app: FastifyInstance): Promise<void>
       if (reason) return reply.code(400).send({ error: `spam:${reason}` });
 
       const threadId = ensureThread(app, req.params.slug);
+
+      const parentId = req.body.parent_id ?? null;
+      if (parentId) {
+        const parent = app.db
+          .prepare("SELECT thread_id FROM comments WHERE id = ?")
+          .get(parentId) as { thread_id: string } | undefined;
+        if (!parent || parent.thread_id !== threadId) {
+          return reply.code(400).send({ error: "invalid_parent" });
+        }
+      }
+
       const id = randomUUID();
       const now = nowUnix();
 
       app.db
         .prepare(
-          "INSERT INTO comments (id, thread_id, user_id, body, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)"
+          "INSERT INTO comments (id, thread_id, parent_id, user_id, body, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)"
         )
-        .run(id, threadId, req.user.sub, body, now, now);
+        .run(id, threadId, parentId, req.user.sub, body, now, now);
 
       const dto: CommentDTO = {
         id,
         thread_id: threadId,
+        parent_id: parentId,
         body,
         created_at: now,
         updated_at: now,
+        deleted: false,
         author: {
           id: req.user.sub,
           display_name: req.user.name,
